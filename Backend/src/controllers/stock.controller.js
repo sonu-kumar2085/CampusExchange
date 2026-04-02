@@ -93,4 +93,29 @@ const getMyOrders = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, orders, "Orders fetched successfully"))
 })
 
-export { getAllStocks, getUserStocks, placeOrder, getMyOrders }
+const createStock = asyncHandler(async (req, res) => {
+    const { stockId, name, price } = req.body
+
+    if (!stockId || !name || !price) {
+        throw new ApiError(400, "stockId, name and price are required")
+    }
+
+    // check if stockId already exists
+    const existingStock = await Stock.findOne({ stockId })
+    if (existingStock) {
+        throw new ApiError(409, "Stock with this stockId already exists")
+    }
+
+    const stock = await Stock.create({
+        stockId,
+        name,
+        price,
+        sharesct: 100   // default 100
+    })
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, stock, "Stock created successfully"))
+})
+
+export { getAllStocks, getUserStocks, placeOrder, getMyOrders , createStock}
