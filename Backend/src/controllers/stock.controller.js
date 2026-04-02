@@ -23,15 +23,40 @@ const getAllStocks = asyncHandler(async (req, res) => {
 const getUserStocks = asyncHandler(async (req, res) => {
     const username = req.user.username
 
-    const userStocks = await UserStocks.find({ username })
+    // get all executed trades
+    const executedTrades = await StockTrade.find({
+        username,
+        status: "executed"
+    })
 
-    if (!userStocks || userStocks.length === 0) {
-        throw new ApiError(404, "No stocks found for this user")
+    if (!executedTrades || executedTrades.length === 0) {
+        throw new ApiError(404, "No executed trades found")
     }
+
+    // calculate shares owned per stock
+    const stockMap = {}
+
+    for (const trade of executedTrades) {
+        if (!stockMap[trade.stockId]) {
+            stockMap[trade.stockId] = 0
+        }
+
+        if (trade.type === "buy") {
+            stockMap[trade.stockId] += trade.quantity   // add shares
+        } else {
+            stockMap[trade.stockId] -= trade.quantity   // remove shares
+        }
+    }
+
+    // format response
+    const portfolio = Object.entries(stockMap).map(([stockId, quantity]) => ({
+        stockId,
+        quantity
+    }))
 
     return res
         .status(200)
-        .json(new ApiResponse(200, userStocks, "User stocks fetched successfully"))
+        .json(new ApiResponse(200, portfolio, "Portfolio fetched successfully"))
 })
 
 // place a buy or sell order
