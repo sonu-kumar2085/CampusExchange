@@ -1,1 +1,1 @@
-export const DB_NAME = "campusexchangedb"
+export const DB_NAME = "campusexchangedatabase"

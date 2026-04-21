@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">CampusExchange</string>
+    <string name="step_counter_notification_title">CampusExchange</string>
+    <string name="step_counter_notification_text">Tracking your steps to earn CampusCoins 🪙</string>
+    <string name="notification_channel_id">campus_exchange_steps</string>
+    <string name="notification_channel_name">Step Tracker</string>
+</resources>
