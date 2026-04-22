@@ -65,17 +65,30 @@ fun LeaderboardScreen(viewModel: LeaderboardViewModel = hiltViewModel()) {
                             third  = uiState.entries[2]
                         )
                     }
-                }
-                itemsIndexed(uiState.entries.drop(3)) { index, entry ->
-                    val rank = index + 4
-                    AnimatedVisibility(
-                        visible = true,
-                        enter   = slideInHorizontally(
-                            initialOffsetX = { 160 },
-                            animationSpec  = tween(280 + index * 40)
-                        ) + fadeIn()
-                    ) {
-                        LeaderboardRow(rank = rank, entry = entry)
+                    itemsIndexed(uiState.entries.drop(3)) { index, entry ->
+                        val rank = index + 4
+                        AnimatedVisibility(
+                            visible = true,
+                            enter   = slideInHorizontally(
+                                initialOffsetX = { 160 },
+                                animationSpec  = tween(280 + index * 40)
+                            ) + fadeIn()
+                        ) {
+                            LeaderboardRow(rank = rank, entry = entry)
+                        }
+                    }
+                } else {
+                    itemsIndexed(uiState.entries) { index, entry ->
+                        val rank = index + 1
+                        AnimatedVisibility(
+                            visible = true,
+                            enter   = slideInHorizontally(
+                                initialOffsetX = { 160 },
+                                animationSpec  = tween(280 + index * 40)
+                            ) + fadeIn()
+                        ) {
+                            LeaderboardRow(rank = rank, entry = entry)
+                        }
                     }
                 }
                 item { Spacer(Modifier.height(24.dp)) }

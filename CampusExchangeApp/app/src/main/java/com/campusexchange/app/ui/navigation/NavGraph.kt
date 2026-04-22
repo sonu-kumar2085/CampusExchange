@@ -8,12 +8,28 @@ import com.campusexchange.app.ui.screens.auth.LoginScreen
 import com.campusexchange.app.ui.screens.auth.SignupScreen
 import com.campusexchange.app.ui.screens.landing.LandingScreen
 import com.campusexchange.app.ui.screens.main.MainScaffold
+import com.campusexchange.app.ui.screens.splash.SplashScreen
 
 @Composable
 fun CampusExchangeNavGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "landing") {
+    NavHost(navController = navController, startDestination = "splash") {
+        composable("splash") {
+            SplashScreen(
+                onNavigateToLanding = {
+                    navController.navigate("landing") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                },
+                onNavigateToDashboard = {
+                    navController.navigate("dashboard") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable("landing") {
             LandingScreen(
                 onGetStarted = { navController.navigate("signup") },

@@ -28,6 +28,9 @@ interface ApiService {
     @GET("users/current-user")
     suspend fun getCurrentUser(): Response<ApiUserResponse>
 
+    @PATCH("users/update-account")
+    suspend fun updateAccount(@Body request: UpdateAccountRequest): Response<ApiUserResponse>
+
     @GET("users/wallet")
     suspend fun getWallet(): Response<ApiWalletResponse>
 

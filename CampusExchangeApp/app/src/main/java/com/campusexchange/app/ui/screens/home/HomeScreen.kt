@@ -31,6 +31,7 @@ fun HomeScreen(
     onNavigateToBets: () -> Unit = {},
     onNavigateToPortfolio: () -> Unit = {},
     onNavigateToLeaderboard: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -95,7 +96,8 @@ fun HomeScreen(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(Accent),
+                    .background(Accent)
+                    .clickable { onNavigateToProfile() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

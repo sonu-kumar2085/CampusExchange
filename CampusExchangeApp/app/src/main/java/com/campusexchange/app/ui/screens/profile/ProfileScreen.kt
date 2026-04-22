@@ -32,18 +32,31 @@ fun ProfileScreen(
     val uiState           = viewModel.uiState.collectAsState().value
     val snackbarHostState  = remember { SnackbarHostState() }
     var showPasswordDialog by remember { mutableStateOf(false) }
-    var showEditDialog     by remember { mutableStateOf(false) }
+    var showUpdateAccountDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.changePasswordSuccess) {
         if (uiState.changePasswordSuccess) {
             snackbarHostState.showSnackbar("Password changed successfully")
-            viewModel.clearPasswordMessages()
+            viewModel.clearMessages()
         }
     }
     LaunchedEffect(uiState.changePasswordError) {
         uiState.changePasswordError?.let {
             snackbarHostState.showSnackbar(it)
-            viewModel.clearPasswordMessages()
+            viewModel.clearMessages()
+        }
+    }
+    LaunchedEffect(uiState.updateAccountSuccess) {
+        if (uiState.updateAccountSuccess) {
+            snackbarHostState.showSnackbar("Account updated successfully")
+            viewModel.clearMessages()
+        }
+    }
+    LaunchedEffect(uiState.updateAccountError) {
+        uiState.updateAccountError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessages()
         }
     }
 
@@ -191,6 +204,12 @@ fun ProfileScreen(
             )
 
             ProfileActionRow(
+                icon    = Icons.Default.Person,
+                label   = "Update Profile",
+                onClick = { showUpdateAccountDialog = true }
+            )
+
+            ProfileActionRow(
                 icon    = Icons.Default.Lock,
                 label   = "Change Password",
                 onClick = { showPasswordDialog = true }
@@ -251,6 +270,19 @@ fun ProfileScreen(
             onConfirm  = { newBio ->
                 viewModel.updateBio(newBio)
                 showEditDialog = false
+            }
+        )
+    }
+
+    // ── Update Account Dialog ─────────────────────────────────────────────────
+    if (showUpdateAccountDialog) {
+        UpdateAccountDialog(
+            currentFullName = uiState.user?.fullName ?: "",
+            currentEmail    = uiState.user?.email ?: "",
+            onDismiss       = { showUpdateAccountDialog = false },
+            onConfirm       = { newName, newEmail ->
+                viewModel.updateAccount(newName, newEmail)
+                showUpdateAccountDialog = false
             }
         )
     }
@@ -423,6 +455,76 @@ fun EditBioDialog(currentBio: String, onDismiss: () -> Unit, onConfirm: (String)
                 shape   = RoundedCornerShape(12.dp)
             ) {
                 Text("Save", color = SurfaceWhite, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Soft) }
+        }
+    )
+}
+
+@Composable
+fun UpdateAccountDialog(
+    currentFullName: String,
+    currentEmail: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var fullName by remember { mutableStateOf(currentFullName) }
+    var email by remember { mutableStateOf(currentEmail) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor   = SurfaceWhite,
+        shape            = RoundedCornerShape(20.dp),
+        title            = { Text("Update Profile", color = Primary, fontWeight = FontWeight.Bold) },
+        text  = {
+            Column {
+                OutlinedTextField(
+                    value         = fullName,
+                    onValueChange = { fullName = it },
+                    label         = { Text("Full Name") },
+                    singleLine    = true,
+                    modifier      = Modifier.fillMaxWidth(),
+                    colors        = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor   = Accent,
+                        unfocusedBorderColor = Divider,
+                        focusedLabelColor    = Accent,
+                        unfocusedLabelColor  = Soft,
+                        focusedTextColor     = Primary,
+                        unfocusedTextColor   = Primary
+                    )
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value         = email,
+                    onValueChange = { email = it },
+                    label         = { Text("Email") },
+                    singleLine    = true,
+                    modifier      = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors        = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor   = Accent,
+                        unfocusedBorderColor = Divider,
+                        focusedLabelColor    = Accent,
+                        unfocusedLabelColor  = Soft,
+                        focusedTextColor     = Primary,
+                        unfocusedTextColor   = Primary
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (fullName.isNotBlank() && email.isNotBlank()) {
+                        onConfirm(fullName, email)
+                    }
+                },
+                colors  = ButtonDefaults.buttonColors(containerColor = Primary),
+                shape   = RoundedCornerShape(12.dp)
+            ) {
+                Text("Update", color = SurfaceWhite, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

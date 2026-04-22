@@ -83,10 +83,20 @@ class AuthRepository @Inject constructor(
 
     private fun parseErrorMessage(json: String): String {
         return try {
-            val msg = json.substringAfter("\"message\":\"").substringBefore("\"")
-            msg.ifBlank { json }
+            val jsonObject = org.json.JSONObject(json)
+            if (jsonObject.has("message")) {
+                jsonObject.getString("message")
+            } else if (jsonObject.has("error")) {
+                jsonObject.getString("error")
+            } else {
+                json
+            }
         } catch (e: Exception) {
-            json
+            if (json.contains("<html", ignoreCase = true)) {
+                "An unexpected server error occurred."
+            } else {
+                json
+            }
         }
     }
 }

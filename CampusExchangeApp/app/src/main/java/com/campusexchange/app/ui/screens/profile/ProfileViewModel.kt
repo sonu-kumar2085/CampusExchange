@@ -22,7 +22,9 @@ data class ProfileUiState(
     val bio: String = "",
     val error: String? = null,
     val changePasswordSuccess: Boolean = false,
-    val changePasswordError: String? = null
+    val changePasswordError: String? = null,
+    val updateAccountSuccess: Boolean = false,
+    val updateAccountError: String? = null
 )
 
 @HiltViewModel
@@ -72,11 +74,40 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun updateAccount(fullName: String, email: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            when (val result = userRepository.updateAccount(fullName, email)) {
+                is Result.Success -> _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = result.data,
+                        updateAccountSuccess = true
+                    )
+                }
+                is Result.Error -> _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        updateAccountError = result.message
+                    )
+                }
+                else -> {}
+            }
+        }
+    }
+
     fun logout() {
         viewModelScope.launch { authRepository.logout() }
     }
 
-    fun clearPasswordMessages() {
-        _uiState.update { it.copy(changePasswordSuccess = false, changePasswordError = null) }
+    fun clearMessages() {
+        _uiState.update {
+            it.copy(
+                changePasswordSuccess = false,
+                changePasswordError = null,
+                updateAccountSuccess = false,
+                updateAccountError = null
+            )
+        }
     }
 }

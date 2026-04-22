@@ -45,6 +45,7 @@ fun MainScaffold(navController: NavController) {
             Surface(
                 modifier  = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .shadow(
                         elevation       = 8.dp,
@@ -93,7 +94,8 @@ fun MainScaffold(navController: NavController) {
                     onNavigateToMarket       = { selectedIndex = 1 },
                     onNavigateToBets         = { selectedIndex = 2 },
                     onNavigateToLeaderboard  = { selectedIndex = 3 },
-                    onNavigateToPortfolio    = { selectedIndex = 4 }
+                    onNavigateToPortfolio    = { selectedIndex = 4 },
+                    onNavigateToProfile      = { selectedIndex = 5 }
                 )
                 1 -> MarketScreen()
                 2 -> BettingScreen()

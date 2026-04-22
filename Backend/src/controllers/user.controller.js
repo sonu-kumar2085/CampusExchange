@@ -125,7 +125,7 @@ const registerUser = asyncHandler( async (req, res) => {
     })
 
     if (existedUser) {
-        throw new ApiError(409, "User with email or username already exists")
+        throw new ApiError(409, "An account with this email or username already exists. Please log in or use a different one.")
     }
 
     const user = await User.create({
@@ -185,13 +185,13 @@ const loginUser = asyncHandler(async (req, res) =>{
     })
 
     if (!user) {
-        throw new ApiError(404, "User does not exist")
+        throw new ApiError(404, "No account found with this username or email. Please check and try again.")
     }
 
    const isPasswordValid = await user.isPasswordCorrect(password)
 
    if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid user credentials")
+    throw new ApiError(401, "Incorrect password. Please try again.")
     }
 
    const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
@@ -301,7 +301,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
-        throw new ApiError(400, "Invalid old password")
+        throw new ApiError(400, "The old password you entered is incorrect. Please try again.")
     }
 
     user.password = newPassword

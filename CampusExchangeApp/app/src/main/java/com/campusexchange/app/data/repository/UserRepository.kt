@@ -34,6 +34,39 @@ class UserRepository @Inject constructor(
             Result.Error(e.message ?: "Network error")
         }
     }
+
+    suspend fun updateAccount(fullName: String, email: String): Result<UserDto> {
+        return try {
+            val response = api.updateAccount(UpdateAccountRequest(fullName, email))
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!.data)
+            } else {
+                val msg = response.errorBody()?.string() ?: "Failed to update account"
+                Result.Error(parseErrorMessage(msg), response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    private fun parseErrorMessage(json: String): String {
+        return try {
+            val jsonObject = org.json.JSONObject(json)
+            if (jsonObject.has("message")) {
+                jsonObject.getString("message")
+            } else if (jsonObject.has("error")) {
+                jsonObject.getString("error")
+            } else {
+                json
+            }
+        } catch (e: Exception) {
+            if (json.contains("<html", ignoreCase = true)) {
+                "An unexpected server error occurred."
+            } else {
+                json
+            }
+        }
+    }
 }
 
 @Singleton

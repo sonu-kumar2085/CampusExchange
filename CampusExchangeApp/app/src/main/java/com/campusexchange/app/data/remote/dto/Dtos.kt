@@ -63,6 +63,11 @@ data class UserDto(
     val updatedAt: String = ""
 )
 
+data class UpdateAccountRequest(
+    val fullName: String,
+    val email: String
+)
+
 data class ApiUserResponse(
     val statusCode: Int,
     val data: UserDto,
