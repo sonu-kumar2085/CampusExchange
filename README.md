@@ -226,7 +226,7 @@ REFRESH_TOKEN_EXPIRY=10d
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/your-username/campusexchange.git
+git clone https://github.com/sonu-kumar2085/campusexchange.git
 cd campusexchange/Backend
 
 # 2. Install dependencies
