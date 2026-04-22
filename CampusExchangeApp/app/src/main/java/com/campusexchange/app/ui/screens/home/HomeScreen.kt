@@ -34,6 +34,9 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    // Re-fetch fresh data every time this tab becomes visible
+    LaunchedEffect(Unit) { viewModel.load() }
+
     val uiState by viewModel.uiState.collectAsState()
 
     val coins       = uiState.wallet?.campusCoins ?: 0.0

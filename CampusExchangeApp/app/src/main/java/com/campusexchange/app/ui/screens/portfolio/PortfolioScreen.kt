@@ -23,6 +23,9 @@ import com.campusexchange.app.ui.theme.*
 
 @Composable
 fun PortfolioScreen(viewModel: PortfolioViewModel = hiltViewModel()) {
+    // Re-fetch fresh data every time this tab becomes visible
+    LaunchedEffect(Unit) { viewModel.load() }
+
     val uiState = viewModel.uiState.collectAsState().value
 
     val totalValue = uiState.holdings.sumOf { holding ->

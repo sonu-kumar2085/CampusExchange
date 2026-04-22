@@ -87,7 +87,8 @@ const placeOrder = asyncHandler(async (req, res) => {
         const wallet = await Wallet.findOne({ username })
         const totalCost = quantity * limitPrice
         if (!wallet || wallet.campusCoins < totalCost) {
-            throw new ApiError(400, `Insufficient campus coins. Need ${totalCost} coins`)
+            const have = wallet ? wallet.campusCoins.toFixed(2) : 0
+            throw new ApiError(400, `Not enough campus coins. You need ${totalCost} coins but only have ${have} coins.`)
         }
     }
 

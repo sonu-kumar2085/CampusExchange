@@ -60,7 +60,8 @@ const enrolluser = asyncHandler(async (req, res) => {
     // check if user has enough campus coins
     const wallet = await Wallet.findOne({ username })
     if (!wallet || wallet.campusCoins < campusCoins) {
-        throw new ApiError(400, "Insufficient campus coins")
+        const have = wallet ? wallet.campusCoins.toFixed(2) : 0
+        throw new ApiError(400, `Not enough campus coins. You have ${have} coins but tried to bet ${campusCoins} coins.`)
     }
 
     // save enroll

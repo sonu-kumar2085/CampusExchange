@@ -30,6 +30,9 @@ import com.campusexchange.app.ui.theme.*
 
 @Composable
 fun LeaderboardScreen(viewModel: LeaderboardViewModel = hiltViewModel()) {
+    // Re-fetch fresh data every time this tab becomes visible
+    LaunchedEffect(Unit) { viewModel.load() }
+
     val uiState = viewModel.uiState.collectAsState().value
 
     Column(

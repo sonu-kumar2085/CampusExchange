@@ -29,6 +29,9 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BettingScreen(viewModel: BettingViewModel = hiltViewModel()) {
+    // Re-fetch fresh data every time this tab becomes visible
+    LaunchedEffect(Unit) { viewModel.loadData() }
+
     val uiState           = viewModel.uiState.collectAsState().value
     val snackbarHostState  = remember { SnackbarHostState() }
     var selectedBet        by remember { mutableStateOf<BetDto?>(null) }

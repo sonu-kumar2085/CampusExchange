@@ -29,6 +29,9 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    // Re-fetch fresh data every time this tab becomes visible
+    LaunchedEffect(Unit) { viewModel.load() }
+
     val uiState           = viewModel.uiState.collectAsState().value
     val snackbarHostState  = remember { SnackbarHostState() }
     var showPasswordDialog by remember { mutableStateOf(false) }
