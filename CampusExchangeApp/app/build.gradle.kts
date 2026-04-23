@@ -20,7 +20,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Production Backend URL
-        buildConfigField("String", "BASE_URL", "\"https://campusexchange-jf3v.onrender.com/api/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://campusexchange-29ww.onrender.com/api/v1/\"")
     }
 
     buildTypes {
@@ -30,10 +30,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://campusexchange-jf3v.onrender.com/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://campusexchange-29ww.onrender.com/api/v1/\"")
         }
         debug {
-            buildConfigField("String", "BASE_URL", "\"https://campusexchange-jf3v.onrender.com/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://campusexchange-29ww.onrender.com/api/v1/\"")
         }
     }
 

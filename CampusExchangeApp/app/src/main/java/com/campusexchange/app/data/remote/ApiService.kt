@@ -9,7 +9,7 @@ interface ApiService {
     // ── Auth ──────────────────────────────────────────────────────────────────
 
     @POST("users/register")
-    suspend fun register(@Body request: RegisterRequest): Response<ApiUserResponse>
+    suspend fun register(@Body request: RegisterRequest): Response<LoginResponse>
 
     @POST("users/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>

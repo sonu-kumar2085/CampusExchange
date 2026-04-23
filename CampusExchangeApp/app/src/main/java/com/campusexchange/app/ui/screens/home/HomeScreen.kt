@@ -39,6 +39,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) { viewModel.load() }
 
     val uiState by viewModel.uiState.collectAsState()
+    var showFullHistory by remember { mutableStateOf(false) }
 
     val coins       = uiState.wallet?.campusCoins ?: 0.0
     val totalSteps  = uiState.remoteSteps?.stepsCount ?: 0
@@ -176,6 +177,16 @@ fun HomeScreen(
                 .padding(horizontal = 20.dp)
         )
 
+        // ── Step History ─────────────────────────────────────────────────────
+        Spacer(modifier = Modifier.height(20.dp))
+        StepHistorySection(
+            history  = stepHistory,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            onClick  = { if (uiState.stepHistory.isNotEmpty()) showFullHistory = true }
+        )
+
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── Quick actions ────────────────────────────────────────────────────
@@ -231,18 +242,14 @@ fun HomeScreen(
             )
         }
 
-        // ── Step History ─────────────────────────────────────────────────────
-        if (stepHistory.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            StepHistorySection(
-                history  = stepHistory,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            )
-        }
-
         Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    if (showFullHistory) {
+        FullStepHistoryDialog(
+            history = uiState.stepHistory,
+            onDismiss = { showFullHistory = false }
+        )
     }
 }
 
@@ -480,7 +487,8 @@ private fun QuickActionCard(
 @Composable
 private fun StepHistorySection(
     history: List<DailyStepDto>,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: () -> Unit
 ) {
     val maxSteps = history.maxOfOrNull { it.stepsCount }?.coerceAtLeast(1) ?: 1
 
@@ -489,6 +497,7 @@ private fun StepHistorySection(
             .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp), clip = false)
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceWhite)
+            .clickable(onClick = onClick)
             .padding(20.dp)
     ) {
         Column {
@@ -547,15 +556,26 @@ private fun StepHistorySection(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Divider, thickness = 0.5.dp)
-            Spacer(modifier = Modifier.height(12.dp))
+            if (history.isEmpty()) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "No step history available yet. Keep walking!",
+                    color = Soft,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Divider, thickness = 0.5.dp)
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Rows
-            history.forEachIndexed { index, day ->
-                StepHistoryRow(day = day, maxSteps = maxSteps)
-                if (index < history.lastIndex) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                // Rows
+                history.forEachIndexed { index, day ->
+                    StepHistoryRow(day = day, maxSteps = maxSteps)
+                    if (index < history.lastIndex) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
                 }
             }
         }
@@ -651,3 +671,31 @@ private fun StepHistoryRow(day: DailyStepDto, maxSteps: Int) {
 private fun formatStepCount(steps: Int): String =
     if (steps >= 1000) "${steps / 1000}.${(steps % 1000) / 100}k"
     else steps.toString()
+
+@Composable
+fun FullStepHistoryDialog(history: List<DailyStepDto>, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceWhite,
+        shape = RoundedCornerShape(20.dp),
+        title = { Text("All Step History", color = Primary, fontWeight = FontWeight.Bold) },
+        text = {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)
+            ) {
+                val maxSteps = history.maxOfOrNull { it.stepsCount }?.coerceAtLeast(1) ?: 1
+                items(history.size) { index ->
+                    StepHistoryRow(day = history[index], maxSteps = maxSteps)
+                    if (index < history.lastIndex) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Accent)
+            }
+        }
+    )
+}

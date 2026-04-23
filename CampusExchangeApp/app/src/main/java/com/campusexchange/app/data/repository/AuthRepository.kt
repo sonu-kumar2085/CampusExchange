@@ -18,11 +18,14 @@ class AuthRepository @Inject constructor(
     private val api: ApiService,
     private val tokenDataStore: TokenDataStore
 ) {
-    suspend fun register(fullName: String, email: String, username: String, password: String): Result<UserDto> {
+    suspend fun register(fullName: String, email: String, username: String, password: String): Result<LoginData> {
         return try {
             val response = api.register(RegisterRequest(fullName, email, username, password))
             if (response.isSuccessful) {
-                Result.Success(response.body()!!.data)
+                val data = response.body()!!.data
+                tokenDataStore.saveTokens(data.accessToken, data.refreshToken)
+                tokenDataStore.saveUsername(data.user.username)
+                Result.Success(data)
             } else {
                 val msg = response.errorBody()?.string() ?: "Registration failed"
                 Result.Error(parseErrorMessage(msg), response.code())
