@@ -111,6 +111,20 @@ data class UpdateStepsRequest(
     val stepsCount: Int
 )
 
+// One record per calendar day returned by GET /steps/history
+data class DailyStepDto(
+    val date: String = "",         // "YYYY-MM-DD"
+    val stepsCount: Int = 0,
+    val coinsEarned: Int = 0
+)
+
+data class ApiDailyStepsHistoryResponse(
+    val statusCode: Int,
+    val data: List<DailyStepDto>,
+    val message: String,
+    val success: Boolean
+)
+
 // ── Stock DTOs ──────────────────────────────────────────────────────────────
 
 data class StockDto(

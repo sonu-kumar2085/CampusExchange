@@ -21,7 +21,7 @@ class StepSyncWorker @AssistedInject constructor(
             val localSteps = stepRepository.getLocalStepsOnce()
             val count = localSteps?.stepsCount ?: 0
 
-            when (val syncResult = stepRepository.syncStepsToBackend(count)) {
+            when (val syncResult = stepRepository.syncDailyStepsToBackend(count)) {
                 is com.campusexchange.app.data.repository.Result.Success -> {
                     // Reset baseline after successful daily sync (new day = new baseline)
                     stepRepository.setBaseline(-1)

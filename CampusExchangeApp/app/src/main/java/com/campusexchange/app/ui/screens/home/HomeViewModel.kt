@@ -3,6 +3,7 @@ package com.campusexchange.app.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.campusexchange.app.data.local.StepEntity
+import com.campusexchange.app.data.remote.dto.DailyStepDto
 import com.campusexchange.app.data.remote.dto.StepsDto
 import com.campusexchange.app.data.remote.dto.UserDto
 import com.campusexchange.app.data.remote.dto.WalletDto
@@ -20,6 +21,7 @@ data class HomeUiState(
     val wallet: WalletDto? = null,
     val remoteSteps: StepsDto? = null,
     val localSteps: StepEntity? = null,
+    val stepHistory: List<DailyStepDto> = emptyList(),
     val error: String? = null
 )
 
@@ -40,9 +42,11 @@ class HomeViewModel @Inject constructor(
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val userResult   = userRepository.getCurrentUser()
-            val walletResult = userRepository.getWallet()
-            val stepsResult  = stepRepository.getRemoteSteps()
+
+            val userResult    = userRepository.getCurrentUser()
+            val walletResult  = userRepository.getWallet()
+            val stepsResult   = stepRepository.getRemoteSteps()
+            val historyResult = stepRepository.getStepsHistory()
 
             _uiState.update {
                 it.copy(
@@ -50,6 +54,7 @@ class HomeViewModel @Inject constructor(
                     user        = if (userResult is Result.Success) userResult.data else null,
                     wallet      = if (walletResult is Result.Success) walletResult.data else null,
                     remoteSteps = if (stepsResult is Result.Success) stepsResult.data else null,
+                    stepHistory = if (historyResult is Result.Success) historyResult.data else emptyList(),
                     error       = if (userResult is Result.Error) userResult.message else null
                 )
             }

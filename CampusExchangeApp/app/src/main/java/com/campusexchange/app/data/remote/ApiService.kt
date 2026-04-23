@@ -40,6 +40,15 @@ interface ApiService {
     @POST("users/steps/update")
     suspend fun updateSteps(@Body request: UpdateStepsRequest): Response<ApiStepsResponse>
 
+    /** Upserts today's DailySteps record — called on every internet-available sync */
+    @POST("users/steps/sync")
+    suspend fun syncDailySteps(@Body request: UpdateStepsRequest): Response<ApiStepsResponse>
+
+    /** Returns all past daily step records for the current user */
+    @GET("users/steps/history")
+    suspend fun getStepsHistory(): Response<ApiDailyStepsHistoryResponse>
+
+
     // ── Stocks ────────────────────────────────────────────────────────────────
 
     @GET("stocks")

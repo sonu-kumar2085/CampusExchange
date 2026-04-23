@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.campusexchange.app.data.remote.dto.DailyStepDto
 import com.campusexchange.app.ui.theme.*
 
 @Composable
@@ -44,6 +45,7 @@ fun HomeScreen(
     val todaySteps  = uiState.localSteps?.stepsCount ?: 0
     val dailyGoal   = 10_000
     val stepProg    = (todaySteps.toFloat() / dailyGoal.toFloat()).coerceIn(0f, 1f)
+    val stepHistory = uiState.stepHistory.take(7)   // show last 7 days
 
     // Animated float for each stat card counter
     val animatedCoins by animateFloatAsState(
@@ -226,6 +228,17 @@ fun HomeScreen(
                 label     = "Ranks",
                 icon      = Icons.Default.EmojiEvents,
                 onClick   = onNavigateToLeaderboard
+            )
+        }
+
+        // ── Step History ─────────────────────────────────────────────────────
+        if (stepHistory.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            StepHistorySection(
+                history  = stepHistory,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
             )
         }
 
@@ -461,3 +474,180 @@ private fun QuickActionCard(
         }
     }
 }
+
+// ── Step History Section ───────────────────────────────────────────────
+
+@Composable
+private fun StepHistorySection(
+    history: List<DailyStepDto>,
+    modifier: Modifier
+) {
+    val maxSteps = history.maxOfOrNull { it.stepsCount }?.coerceAtLeast(1) ?: 1
+
+    Box(
+        modifier = modifier
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp), clip = false)
+            .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceWhite)
+            .padding(20.dp)
+    ) {
+        Column {
+            // Header
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier         = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(SurfaceLight),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Default.History,
+                            contentDescription = null,
+                            tint               = Accent,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text       = "Step History",
+                            fontWeight = FontWeight.Bold,
+                            fontSize   = 15.sp,
+                            color      = Primary
+                        )
+                        Text(
+                            text     = "Last ${history.size} days",
+                            fontSize = 11.sp,
+                            color    = Soft
+                        )
+                    }
+                }
+                // Total coins badge
+                val totalCoins = history.sumOf { it.coinsEarned }
+                if (totalCoins > 0) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFFFFF3CD))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text       = "🪙 $totalCoins earned",
+                            fontSize   = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = Color(0xFF856404)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Divider, thickness = 0.5.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Rows
+            history.forEachIndexed { index, day ->
+                StepHistoryRow(day = day, maxSteps = maxSteps)
+                if (index < history.lastIndex) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StepHistoryRow(day: DailyStepDto, maxSteps: Int) {
+    // Parse "YYYY-MM-DD" → "Apr 22" style label
+    val label = runCatching {
+        val parts = day.date.split("-")
+        val months = listOf("Jan","Feb","Mar","Apr","May","Jun",
+                            "Jul","Aug","Sep","Oct","Nov","Dec")
+        "${months[parts[1].toInt() - 1]} ${parts[2].trimStart('0')}"
+    }.getOrElse { day.date }
+
+    val barProgress = (day.stepsCount.toFloat() / maxSteps.toFloat()).coerceIn(0f, 1f)
+    val animatedBar by animateFloatAsState(
+        targetValue  = barProgress,
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
+        label        = "bar_${day.date}"
+    )
+
+    Row(
+        modifier          = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Date label
+        Text(
+            text      = label,
+            fontSize  = 12.sp,
+            color     = Soft,
+            fontWeight = FontWeight.Medium,
+            modifier  = Modifier.width(46.dp)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Bar
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(SurfaceLight)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(animatedBar)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(Accent, NeonGreen)
+                        )
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        // Step count
+        Text(
+            text     = formatStepCount(day.stepsCount),
+            fontSize = 12.sp,
+            color    = Primary,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.width(52.dp),
+            textAlign = TextAlign.End
+        )
+
+        Spacer(modifier = Modifier.width(6.dp))
+
+        // Coins badge (only if cron has run and coinsEarned > 0)
+        if (day.coinsEarned > 0) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFFFF3CD))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text     = "🪙${day.coinsEarned}",
+                    fontSize = 10.sp,
+                    color    = Color(0xFF856404),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+private fun formatStepCount(steps: Int): String =
+    if (steps >= 1000) "${steps / 1000}.${(steps % 1000) / 100}k"
+    else steps.toString()

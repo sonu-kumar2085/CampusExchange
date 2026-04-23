@@ -3,6 +3,7 @@ package com.campusexchange.app.data.repository
 import com.campusexchange.app.data.local.StepDao
 import com.campusexchange.app.data.local.StepEntity
 import com.campusexchange.app.data.remote.ApiService
+import com.campusexchange.app.data.remote.dto.DailyStepDto
 import com.campusexchange.app.data.remote.dto.StepsDto
 import com.campusexchange.app.data.remote.dto.UpdateStepsRequest
 import kotlinx.coroutines.flow.Flow
@@ -55,7 +56,7 @@ class StepRepository @Inject constructor(
         }
     }
 
-    // Sync local steps to backend
+    // Sync local steps to backend (legacy — keeps rolling Steps doc in sync)
     suspend fun syncStepsToBackend(stepsCount: Int): Result<StepsDto> {
         return try {
             val response = api.updateSteps(UpdateStepsRequest(stepsCount))
@@ -65,6 +66,36 @@ class StepRepository @Inject constructor(
             } else {
                 val msg = response.errorBody()?.string() ?: "Sync failed"
                 Result.Error(msg, response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    // Upsert today's DailySteps record on backend (new — called by StepSyncWorker)
+    suspend fun syncDailyStepsToBackend(stepsCount: Int): Result<StepsDto> {
+        return try {
+            val response = api.syncDailySteps(UpdateStepsRequest(stepsCount))
+            if (response.isSuccessful) {
+                markSynced()
+                Result.Success(response.body()!!.data)
+            } else {
+                val msg = response.errorBody()?.string() ?: "Sync failed"
+                Result.Error(msg, response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    // Fetch full step history from backend
+    suspend fun getStepsHistory(): Result<List<DailyStepDto>> {
+        return try {
+            val response = api.getStepsHistory()
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!.data)
+            } else {
+                Result.Error("Failed to load history", response.code())
             }
         } catch (e: Exception) {
             Result.Error(e.message ?: "Network error")
