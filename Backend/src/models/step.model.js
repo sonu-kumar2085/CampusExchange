@@ -10,7 +10,7 @@ const stepsSchema = new Schema(
             trim: true,
             lowercase: true,
         },
-        stepsCount: {
+        unconvertedSteps: {
             type: Number,
             default: 0,
             min: [0, "Steps count cannot be negative"],

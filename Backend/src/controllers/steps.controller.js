@@ -3,15 +3,13 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Steps } from "../models/step.model.js";
 import { DailySteps } from "../models/dailySteps.model.js";
+import { Wallet } from "../models/wallet.model.js";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns today's date as "YYYY-MM-DD" in UTC */
 function todayUTC() {
     return new Date().toISOString().slice(0, 10);
 }
 
-// ── Existing controllers (unchanged) ─────────────────────────────────────────
 
 const getStepInfo = asyncHandler(async (req, res) => {
     const Step = await Steps.findOne({ username: req.user.username })
@@ -26,16 +24,16 @@ const getStepInfo = asyncHandler(async (req, res) => {
 })
 
 const updateSteps = asyncHandler(async (req, res) => {
-    const { stepsCount } = req.body
+    const { unconvertedSteps } = req.body
     const username = req.user.username
 
-    if (!stepsCount || stepsCount < 0) {
-        throw new ApiError(400, "Valid steps count is required")
+    if (unconvertedSteps === undefined || unconvertedSteps === null || unconvertedSteps < 0) {
+        throw new ApiError(400, "Valid unconverted steps count is required")
     }
 
     const steps = await Steps.findOneAndUpdate(
         { username },
-        { $set: { stepsCount } },
+        { $set: { unconvertedSteps } },
         { new: true }
     )
 
@@ -48,17 +46,7 @@ const updateSteps = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, steps, "Steps updated successfully"))
 })
 
-// ── New controllers ───────────────────────────────────────────────────────────
 
-/**
- * POST /api/v1/users/steps/sync
- *
- * Called by Android whenever internet is available.
- * 1. Upserts today's record in DailySteps (sets stepsCount for today).
- * 2. Also updates the rolling Steps document (used by the midnight cron).
- *
- * Body: { stepsCount: Number }
- */
 const upsertDailySteps = asyncHandler(async (req, res) => {
     const { stepsCount } = req.body
     const username = req.user.username
@@ -68,18 +56,10 @@ const upsertDailySteps = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Valid steps count is required")
     }
 
-    // 1️⃣  Upsert the DailySteps record for today
     const dailyRecord = await DailySteps.findOneAndUpdate(
         { username, date },
         { $set: { stepsCount } },
         { new: true, upsert: true }
-    )
-
-    // 2️⃣  Keep the rolling Steps doc in sync (used by cron)
-    await Steps.findOneAndUpdate(
-        { username },
-        { $set: { stepsCount } },
-        { new: true }
     )
 
     return res
@@ -87,13 +67,7 @@ const upsertDailySteps = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, dailyRecord, "Daily steps synced successfully"))
 })
 
-/**
- * GET /api/v1/users/steps/history
- *
- * Returns all DailySteps records for the authenticated user,
- * newest first. The Android dashboard uses this to render the
- * step-history chart.
- */
+
 const getDailyStepsHistory = asyncHandler(async (req, res) => {
     const username = req.user.username
 
@@ -106,4 +80,62 @@ const getDailyStepsHistory = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, history, "Step history fetched successfully"))
 })
 
-export { getStepInfo, updateSteps, upsertDailySteps, getDailyStepsHistory }
+const convertStepsToCoins = asyncHandler(async (req, res) => {
+    const username = req.user.username
+
+    const stepsRecord = await Steps.findOne({ username })
+
+    if (!stepsRecord) {
+        throw new ApiError(404, "Steps record not found")
+    }
+
+    const stepsCount = stepsRecord.unconvertedSteps
+
+    if (stepsCount < 10) {
+        throw new ApiError(400, "You need at least 10 steps to convert to coins")
+    }
+
+    const earnedCoins = Math.floor(stepsCount / 10)
+
+    // Add coins to wallet
+    const wallet = await Wallet.findOneAndUpdate(
+        { username },
+        { $inc: { campusCoins: earnedCoins } },
+        { new: true }
+    )
+
+    if (!wallet) {
+        throw new ApiError(404, "Wallet not found")
+    }
+
+    // Update today's DailySteps record
+    const date = todayUTC()
+    await DailySteps.findOneAndUpdate(
+        { username, date },
+        { $inc: { coinsEarned: earnedCoins } },
+        { upsert: true }
+    )
+
+    // Reset rolling steps to 0
+    const updatedSteps = await Steps.findOneAndUpdate(
+        { username },
+        { $set: { unconvertedSteps: 0 } },
+        { new: true }
+    )
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    coinsEarned: earnedCoins,
+                    walletCoins: wallet.campusCoins,
+                    stepsLeft: updatedSteps.unconvertedSteps
+                },
+                "Steps successfully converted to coins"
+            )
+        )
+})
+
+export { getStepInfo, updateSteps, upsertDailySteps, getDailyStepsHistory, convertStepsToCoins }

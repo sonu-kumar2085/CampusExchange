@@ -6,15 +6,13 @@ dotenv.config({
     path: './.env'
 })
 
-import { stepsToCoinCron } from "./crons/stepsToCoin.cron.js"
 import { betResultCron } from "./crons/betResult.cron.js"
 import { stockTradeCron } from "./crons/stockTrade.cron.js"
 
 connectDB()
 .then(() => {
-    stepsToCoinCron()  // steps to coin
     betResultCron()    // bets Result
-    stockTradeCron() 
+    stockTradeCron()   
     app.listen(process.env.PORT || 8000, () => {
         console.log(`⚙️ Server is running at port : ${process.env.PORT}`);
     })
