@@ -44,8 +44,8 @@ fun HomeScreen(
     val coins       = uiState.wallet?.campusCoins ?: 0.0
     val todaySteps  = uiState.localSteps?.todayStepCount ?: 0
     val syncCount   = uiState.localSteps?.syncCount ?: 0
-    val localUnconverted = uiState.localSteps?.unconvertedSteps ?: 0
-    val currentUnconverted = localUnconverted + (todaySteps - syncCount)
+    val baseUnconverted = uiState.remoteSteps?.unconvertedSteps ?: uiState.localSteps?.unconvertedSteps ?: 0
+    val currentUnconverted = baseUnconverted + (todaySteps - syncCount)
 
     val dailyGoal   = 10_000
     val stepProg    = (todaySteps.toFloat() / dailyGoal.toFloat()).coerceIn(0f, 1f)

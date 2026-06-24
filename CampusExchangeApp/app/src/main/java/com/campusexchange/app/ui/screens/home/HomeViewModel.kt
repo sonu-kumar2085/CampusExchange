@@ -77,17 +77,21 @@ class HomeViewModel @Inject constructor(
         
         viewModelScope.launch {
             try {
-                val localSteps = stepRepository.getLocalStepsOnce() ?: return@launch
-                val todayStepCount = localSteps.todayStepCount
-                val syncCount = localSteps.syncCount
-                val unconvertedSteps = localSteps.unconvertedSteps
+                val localSteps = stepRepository.getLocalStepsOnce()
+                val todayStepCount = localSteps?.todayStepCount ?: 0
+                val syncCount = localSteps?.syncCount ?: 0
+                
+                val remoteUnconverted = _uiState.value.remoteSteps?.unconvertedSteps ?: 0
+                val baseUnconverted = localSteps?.unconvertedSteps ?: remoteUnconverted
 
                 val newSteps = todayStepCount - syncCount
-                val updatedUnconvertedSteps = unconvertedSteps + newSteps
+                val updatedUnconvertedSteps = baseUnconverted + newSteps
 
-                // Update local DB
-                stepRepository.updateUnconvertedSteps(updatedUnconvertedSteps)
-                stepRepository.updateSyncCount(todayStepCount)
+                // Update local DB if localSteps exists, otherwise it will sync at next sensor tick
+                if (localSteps != null) {
+                    stepRepository.updateUnconvertedSteps(updatedUnconvertedSteps)
+                    stepRepository.updateSyncCount(todayStepCount)
+                }
 
                 // Sync to backend
                 val syncResult = stepRepository.syncStepsToBackend(updatedUnconvertedSteps)
@@ -95,8 +99,11 @@ class HomeViewModel @Inject constructor(
                     // Call conversion API
                     val convertResult = stepRepository.convertStepsToCoins()
                     if (convertResult is Result.Success) {
-                        // Update local unconvertedSteps to 0
-                        stepRepository.updateUnconvertedSteps(0)
+                        // Update local unconvertedSteps to modulo remainder (what's left after converting)
+                        val remainingSteps = convertResult.data.stepsLeft
+                        if (localSteps != null) {
+                            stepRepository.updateUnconvertedSteps(remainingSteps)
+                        }
                         // Refresh data
                         load()
                     } else {

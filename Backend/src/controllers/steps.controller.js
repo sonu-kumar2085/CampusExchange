@@ -96,6 +96,18 @@ const convertStepsToCoins = asyncHandler(async (req, res) => {
     }
 
     const earnedCoins = Math.floor(stepsCount / 10)
+    const remainderSteps = stepsCount % 10
+
+    // Atomically reset steps to remainder to prevent double conversion
+    const updatedSteps = await Steps.findOneAndUpdate(
+        { username, unconvertedSteps: stepsCount },
+        { $set: { unconvertedSteps: remainderSteps } },
+        { new: true }
+    )
+
+    if (!updatedSteps) {
+        throw new ApiError(409, "Conversion race condition detected. Please try again.")
+    }
 
     // Add coins to wallet
     const wallet = await Wallet.findOneAndUpdate(
@@ -116,13 +128,6 @@ const convertStepsToCoins = asyncHandler(async (req, res) => {
         { upsert: true }
     )
 
-    // Reset rolling steps to 0
-    const updatedSteps = await Steps.findOneAndUpdate(
-        { username },
-        { $set: { unconvertedSteps: 0 } },
-        { new: true }
-    )
-
     return res
         .status(200)
         .json(
@@ -131,7 +136,7 @@ const convertStepsToCoins = asyncHandler(async (req, res) => {
                 {
                     coinsEarned: earnedCoins,
                     walletCoins: wallet.campusCoins,
-                    stepsLeft: updatedSteps.unconvertedSteps
+                    stepsLeft: remainderSteps
                 },
                 "Steps successfully converted to coins"
             )
