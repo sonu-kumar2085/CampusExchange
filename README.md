@@ -3,7 +3,7 @@
 > **IT Workshop Course Project**
 > A gamified campus economy app where students earn coins by walking, then trade stocks and place bets using those coins.
 
-> 📱 *Frontend is under development / linked separately.*
+> 📱 *Download the Android APK here:* [CampusExchange App](https://drive.google.com/file/d/1sDuPAd24bYOC2YC_VRmA1Avfjuudu_SM/view?usp=sharing)
 
 ---
 
@@ -33,7 +33,8 @@ It's built as the backend REST API server, handling authentication, a step-to-co
 
 ### 🚶 Step Economy
 - The mobile app tracks steps walked by the user throughout the day.
-- At the end of each day, a cron job converts steps → **CampusCoins** at a rate of **10 steps = 1 CampusCoin**.
+- Users can manually convert their steps to coins at any time via the app, or a cron job will automatically convert remaining steps at the end of each day.
+- The conversion rate is always **10 steps = 1 CampusCoin**.
 
 ### 📈 Stock Trading
 - Users can view available stocks and place **buy or sell orders** using their CampusCoins.
@@ -192,7 +193,7 @@ These background jobs run automatically on a schedule:
 
 | Cron File | Purpose |
 |---|---|
-| `stepsToCoin.cron.js` | Runs daily — converts each user's steps into CampusCoins (10 steps = 1 coin) and resets step count |
+| `stepsToCoin.cron.js` | Runs daily at midnight — automatically converts each user's remaining steps into CampusCoins (10 steps = 1 coin) |
 | `stockTrade.cron.js` | Runs periodically — executes the order-matching trading algorithm (matches buy ≥ sell price) |
 | `betResult.cron.js` | Runs after a bet closes — distributes the prize pool to winners proportionally |
 
