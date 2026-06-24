@@ -142,7 +142,7 @@ const registerUser = asyncHandler( async (req, res) => {
 
     await Steps.create({
     username: user.username,
-    stepsCount: 0
+    unconvertedSteps: 0
     })
 
     const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)

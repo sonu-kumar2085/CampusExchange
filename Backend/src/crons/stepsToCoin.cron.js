@@ -15,11 +15,11 @@ const stepsToCoinCron = () => {
         console.log("Running steps to coin conversion...")
 
         try {
-            const allSteps = await Steps.find({ stepsCount: { $gt: 0 } })
+            const allSteps = await Steps.find({ unconvertedSteps: { $gt: 0 } })
             const yesterday = yesterdayUTC()
 
             for (const step of allSteps) {
-                const earnedCoins = Math.floor(step.stepsCount / 10)  // 10 steps = 1 coin
+                const earnedCoins = Math.floor(step.unconvertedSteps / 10)  // 10 steps = 1 coin
 
                 if (earnedCoins > 0) {
                     // 1️⃣  Add coins to wallet
@@ -34,7 +34,7 @@ const stepsToCoinCron = () => {
                         { username: step.username, date: yesterday },
                         {
                             $set: {
-                                stepsCount: step.stepsCount,
+                                stepsCount: step.unconvertedSteps,
                                 coinsEarned: earnedCoins
                             }
                         },
@@ -44,7 +44,7 @@ const stepsToCoinCron = () => {
                     // 3️⃣  Reset rolling steps to 0
                     await Steps.findOneAndUpdate(
                         { username: step.username },
-                        { $set: { stepsCount: 0 } }
+                        { $set: { unconvertedSteps: 0 } }
                     )
                 }
             }

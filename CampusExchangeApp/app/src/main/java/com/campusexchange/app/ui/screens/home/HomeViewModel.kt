@@ -68,4 +68,46 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
+    private var isConverting = false
+
+    fun onConvertClicked() {
+        if (isConverting) return
+        isConverting = true
+        
+        viewModelScope.launch {
+            try {
+                val localSteps = stepRepository.getLocalStepsOnce() ?: return@launch
+                val todayStepCount = localSteps.todayStepCount
+                val syncCount = localSteps.syncCount
+                val unconvertedSteps = localSteps.unconvertedSteps
+
+                val newSteps = todayStepCount - syncCount
+                val updatedUnconvertedSteps = unconvertedSteps + newSteps
+
+                // Update local DB
+                stepRepository.updateUnconvertedSteps(updatedUnconvertedSteps)
+                stepRepository.updateSyncCount(todayStepCount)
+
+                // Sync to backend
+                val syncResult = stepRepository.syncStepsToBackend(updatedUnconvertedSteps)
+                if (syncResult is Result.Success) {
+                    // Call conversion API
+                    val convertResult = stepRepository.convertStepsToCoins()
+                    if (convertResult is Result.Success) {
+                        // Update local unconvertedSteps to 0
+                        stepRepository.updateUnconvertedSteps(0)
+                        // Refresh data
+                        load()
+                    } else {
+                        _uiState.update { it.copy(error = "Conversion failed") }
+                    }
+                } else {
+                    _uiState.update { it.copy(error = "Sync failed") }
+                }
+            } finally {
+                isConverting = false
+            }
+        }
+    }
 }

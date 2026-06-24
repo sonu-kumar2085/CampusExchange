@@ -38,7 +38,10 @@ interface ApiService {
     suspend fun getSteps(): Response<ApiStepsResponse>
 
     @POST("users/steps/update")
-    suspend fun updateSteps(@Body request: UpdateStepsRequest): Response<ApiStepsResponse>
+    suspend fun updateSteps(@Body request: UpdateUnconvertedStepsRequest): Response<ApiStepsResponse>
+
+    @POST("users/steps/convert")
+    suspend fun convertStepsToCoins(): Response<ConvertStepsResponse>
 
     /** Upserts today's DailySteps record — called on every internet-available sync */
     @POST("users/steps/sync")

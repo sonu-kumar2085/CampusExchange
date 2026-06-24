@@ -147,7 +147,7 @@ fun ProfileScreen(
                 )
                 ProfileStatItem(
                     icon  = Icons.Default.DirectionsWalk,
-                    value = "${uiState.remoteSteps?.stepsCount ?: 0}",
+                    value = "${uiState.remoteSteps?.unconvertedSteps ?: 0}",
                     label = "Total Steps"
                 )
             }

@@ -20,12 +20,30 @@ class StepRepository @Inject constructor(
 
     suspend fun getLocalStepsOnce(): StepEntity? = stepDao.getStepsOnce()
 
-    suspend fun updateLocalStepCount(count: Int) {
+    suspend fun updateTodayStepCount(count: Int) {
         val existing = stepDao.getStepsOnce()
         if (existing == null) {
-            stepDao.insertOrReplace(StepEntity(id = 1, stepsCount = count))
+            stepDao.insertOrReplace(StepEntity(id = 1, todayStepCount = count))
         } else {
-            stepDao.updateStepCount(count)
+            stepDao.updateTodayStepCount(count)
+        }
+    }
+
+    suspend fun updateSyncCount(count: Int) {
+        val existing = stepDao.getStepsOnce()
+        if (existing == null) {
+            stepDao.insertOrReplace(StepEntity(id = 1, syncCount = count))
+        } else {
+            stepDao.updateSyncCount(count)
+        }
+    }
+
+    suspend fun updateUnconvertedSteps(count: Int) {
+        val existing = stepDao.getStepsOnce()
+        if (existing == null) {
+            stepDao.insertOrReplace(StepEntity(id = 1, unconvertedSteps = count))
+        } else {
+            stepDao.updateUnconvertedSteps(count)
         }
     }
 
@@ -57,14 +75,28 @@ class StepRepository @Inject constructor(
     }
 
     // Sync local steps to backend (legacy — keeps rolling Steps doc in sync)
-    suspend fun syncStepsToBackend(stepsCount: Int): Result<StepsDto> {
+    suspend fun syncStepsToBackend(unconvertedSteps: Int): Result<StepsDto> {
         return try {
-            val response = api.updateSteps(UpdateStepsRequest(stepsCount))
+            val response = api.updateSteps(com.campusexchange.app.data.remote.dto.UpdateUnconvertedStepsRequest(unconvertedSteps))
             if (response.isSuccessful) {
                 markSynced()
                 Result.Success(response.body()!!.data)
             } else {
                 val msg = response.errorBody()?.string() ?: "Sync failed"
+                Result.Error(msg, response.code())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Network error")
+        }
+    }
+
+    suspend fun convertStepsToCoins(): Result<com.campusexchange.app.data.remote.dto.ConvertStepsData> {
+        return try {
+            val response = api.convertStepsToCoins()
+            if (response.isSuccessful) {
+                Result.Success(response.body()!!.data)
+            } else {
+                val msg = response.errorBody()?.string() ?: "Conversion failed"
                 Result.Error(msg, response.code())
             }
         } catch (e: Exception) {

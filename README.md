@@ -221,8 +221,9 @@ REFRESH_TOKEN_EXPIRY=10d
 ### Prerequisites
 - Node.js v18+
 - MongoDB (local or Atlas)
+- Docker & Docker Compose (optional, for containerized setup)
 
-### Installation
+### Installation (Local Development)
 
 ```bash
 # 1. Clone the repo
@@ -240,7 +241,24 @@ cp .env.example .env
 npm run dev
 ```
 
-The server will start at `http://localhost:8000`.
+The server will start at `http://localhost:4000`.
+
+### Running with Docker (Recommended for Containerized Dev)
+
+You can run the entire backend stack (Node.js and MongoDB) using Docker:
+
+```bash
+# 1. Start the containers (builds the image on first run)
+docker compose up --build
+
+# 2. Seed the database (runs inside the container)
+docker compose exec api node seed.js
+
+# 3. Stop the containers
+docker compose down
+```
+
+The Docker container will run the backend on `http://localhost:4000` and automatically configure a dedicated local MongoDB database.
 
 ---
 

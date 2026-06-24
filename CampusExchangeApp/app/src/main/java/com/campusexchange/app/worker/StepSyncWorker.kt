@@ -19,13 +19,23 @@ class StepSyncWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             val localSteps = stepRepository.getLocalStepsOnce()
-            val count = localSteps?.stepsCount ?: 0
+            val todayStepCount = localSteps?.todayStepCount ?: 0
+            val syncCount = localSteps?.syncCount ?: 0
+            val unconvertedSteps = localSteps?.unconvertedSteps ?: 0
 
-            when (val syncResult = stepRepository.syncDailyStepsToBackend(count)) {
+            val newSteps = todayStepCount - syncCount
+            val updatedUnconvertedSteps = unconvertedSteps + newSteps
+
+            when (val syncResult = stepRepository.syncDailyStepsToBackend(todayStepCount)) {
                 is com.campusexchange.app.data.repository.Result.Success -> {
-                    // Reset baseline after successful daily sync (new day = new baseline)
+                    // Sync the accumulated unconvertedSteps to the backend
+                    stepRepository.syncStepsToBackend(updatedUnconvertedSteps)
+
+                    // Update local DB
+                    stepRepository.updateUnconvertedSteps(updatedUnconvertedSteps)
+                    stepRepository.updateTodayStepCount(0)
+                    stepRepository.updateSyncCount(0)
                     stepRepository.setBaseline(-1)
-                    stepRepository.updateLocalStepCount(0)
                     Result.success()
                 }
                 is com.campusexchange.app.data.repository.Result.Error -> {

@@ -42,8 +42,11 @@ fun HomeScreen(
     var showFullHistory by remember { mutableStateOf(false) }
 
     val coins       = uiState.wallet?.campusCoins ?: 0.0
-    val totalSteps  = uiState.remoteSteps?.stepsCount ?: 0
-    val todaySteps  = uiState.localSteps?.stepsCount ?: 0
+    val todaySteps  = uiState.localSteps?.todayStepCount ?: 0
+    val syncCount   = uiState.localSteps?.syncCount ?: 0
+    val localUnconverted = uiState.localSteps?.unconvertedSteps ?: 0
+    val currentUnconverted = localUnconverted + (todaySteps - syncCount)
+
     val dailyGoal   = 10_000
     val stepProg    = (todaySteps.toFloat() / dailyGoal.toFloat()).coerceIn(0f, 1f)
     val stepHistory = uiState.stepHistory.take(7)   // show last 7 days
@@ -55,7 +58,7 @@ fun HomeScreen(
         label        = "coins"
     )
     val animatedTotal by animateFloatAsState(
-        targetValue  = totalSteps.toFloat(),
+        targetValue  = currentUnconverted.toFloat(),
         animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
         label        = "total_steps"
     )
@@ -137,7 +140,7 @@ fun HomeScreen(
         ) {
             StatCard(
                 modifier    = Modifier.weight(1f),
-                label       = "Total Steps",
+                label       = "Unconverted",
                 value       = animatedTotal.toInt().toString(),
                 icon        = Icons.Default.DirectionsWalk,
                 iconTint    = Accent,
@@ -160,6 +163,8 @@ fun HomeScreen(
         // Coins card — full width
         CoinCard(
             coins    = animatedCoins,
+            currentUnconverted = currentUnconverted,
+            onConvert = { viewModel.onConvertClicked() },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
@@ -307,7 +312,12 @@ private fun StatCard(
 // ── Coin Card ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun CoinCard(coins: Float, modifier: Modifier) {
+private fun CoinCard(
+    coins: Float,
+    currentUnconverted: Int,
+    onConvert: () -> Unit,
+    modifier: Modifier
+) {
     Box(
         modifier = modifier
             .shadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp), clip = false)
@@ -319,43 +329,66 @@ private fun CoinCard(coins: Float, modifier: Modifier) {
             )
             .padding(24.dp)
     ) {
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text     = "Campus Coins",
-                    color    = Soft,
-                    fontSize = 13.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text       = String.format("%.0f", coins),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize   = 34.sp,
-                    color      = SurfaceWhite
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text     = "10 steps = 1 coin",
-                    color    = Soft,
-                    fontSize = 11.sp
-                )
-            }
-            Box(
-                modifier         = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(SurfaceWhite.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
+        Column {
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector        = Icons.Default.MonetizationOn,
-                    contentDescription = null,
-                    tint               = CoinGold,
-                    modifier           = Modifier.size(30.dp)
+                Column {
+                    Text(
+                        text     = "Campus Coins",
+                        color    = Soft,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text       = String.format("%.0f", coins),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize   = 34.sp,
+                        color      = SurfaceWhite
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text     = "10 steps = 1 coin",
+                        color    = Soft,
+                        fontSize = 11.sp
+                    )
+                }
+                Box(
+                    modifier         = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(SurfaceWhite.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.MonetizationOn,
+                        contentDescription = null,
+                        tint               = CoinGold,
+                        modifier           = Modifier.size(30.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onConvert,
+                enabled = currentUnconverted >= 10,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SurfaceWhite,
+                    contentColor = Primary,
+                    disabledContainerColor = SurfaceWhite.copy(alpha = 0.5f),
+                    disabledContentColor = Primary.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Convert Steps To Coins",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
         }

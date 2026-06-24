@@ -15,8 +15,14 @@ interface StepDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplace(step: StepEntity)
 
-    @Query("UPDATE steps SET stepsCount = :count WHERE id = 1")
-    suspend fun updateStepCount(count: Int)
+    @Query("UPDATE steps SET todayStepCount = :count WHERE id = 1")
+    suspend fun updateTodayStepCount(count: Int)
+
+    @Query("UPDATE steps SET syncCount = :count WHERE id = 1")
+    suspend fun updateSyncCount(count: Int)
+
+    @Query("UPDATE steps SET unconvertedSteps = :count WHERE id = 1")
+    suspend fun updateUnconvertedSteps(count: Int)
 
     @Query("UPDATE steps SET sensorBaseline = :baseline WHERE id = 1")
     suspend fun updateBaseline(baseline: Int)

@@ -9,7 +9,7 @@ import { Wallet } from "../models/wallet.model.js";
 const getallBet = asyncHandler(async (req, res) => {
     const bets = await Bet.find()
 
-    if (!bets || bets.length === 0) {
+    if (!bets) {
         throw new ApiError(404, "No bets found")
     }
 
@@ -101,7 +101,7 @@ const getEnrolledBets = asyncHandler(async (req, res) => {
     // get all enrollments of user
     const enrollments = await Enroll.find({ username })
 
-    if (!enrollments || enrollments.length === 0) {
+    if (!enrollments) {
         throw new ApiError(404, "No enrolled bets found")
     }
 

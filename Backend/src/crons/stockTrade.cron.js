@@ -5,7 +5,7 @@ import { Wallet } from "../models/wallet.model.js"
 import { Stock } from "../models/stock.model.js"
 
 const stockTradeCron = () => {
-    cron.schedule('0 0 * * *', async () => {
+    cron.schedule('* * * * *', async () => {
         console.log("Running stock trade execution...")
 
         try {
@@ -44,6 +44,24 @@ const stockTradeCron = () => {
                         const matchedQty = Math.min(buyOrder.quantity, sellOrder.quantity)
                         const totalCost = matchedQty * executionPrice
 
+                        // Check buyer wallet
+                        const buyerWallet = await Wallet.findOne({ username: buyOrder.username })
+                        if (!buyerWallet || buyerWallet.campusCoins < totalCost) {
+                            console.log(`Match failed: Buyer ${buyOrder.username} has insufficient coins. Cancelling buy order.`)
+                            await StockTrade.findByIdAndUpdate(buyOrder._id, { status: "cancelled" })
+                            buyIndex++
+                            continue
+                        }
+
+                        // Check seller shares
+                        const sellerStock = await UserStocks.findOne({ username: sellOrder.username, stockId })
+                        if (!sellerStock || sellerStock.quantity < matchedQty) {
+                            console.log(`Match failed: Seller ${sellOrder.username} has insufficient shares. Cancelling sell order.`)
+                            await StockTrade.findByIdAndUpdate(sellOrder._id, { status: "cancelled" })
+                            sellIndex++
+                            continue
+                        }
+
                         // 1. deduct coins from buyer
                         await Wallet.findOneAndUpdate(
                             { username: buyOrder.username },
@@ -63,9 +81,16 @@ const stockTradeCron = () => {
                         })
 
                         if (buyerStock) {
+                            const newQty = buyerStock.quantity + matchedQty
+                            const newAvgPrice = ((buyerStock.quantity * buyerStock.avgPrice) + (matchedQty * executionPrice)) / newQty
                             await UserStocks.findOneAndUpdate(
                                 { username: buyOrder.username, stockId },
-                                { $inc: { quantity: matchedQty } }
+                                { 
+                                    $set: { 
+                                        quantity: newQty,
+                                        avgPrice: newAvgPrice
+                                    } 
+                                }
                             )
                         } else {
                             await UserStocks.create({
@@ -88,32 +113,51 @@ const stockTradeCron = () => {
                             { $set: { price: executionPrice } }
                         )
 
-                        // 6. mark orders as executed
-                        await StockTrade.findByIdAndUpdate(buyOrder._id, { status: "executed" })
-                        await StockTrade.findByIdAndUpdate(sellOrder._id, { status: "executed" })
+                        // 6. mark orders as executed & handle partial matching
+                        if (buyOrder.quantity === matchedQty) {
+                            await StockTrade.findByIdAndUpdate(buyOrder._id, { status: "executed" })
+                            buyIndex++
+                        } else {
+                            await StockTrade.create({
+                                username: buyOrder.username,
+                                stockId,
+                                quantity: buyOrder.quantity - matchedQty,
+                                limitPrice: buyOrder.limitPrice,
+                                type: "buy",
+                                status: "pending"
+                            })
+                            await StockTrade.findByIdAndUpdate(buyOrder._id, { 
+                                quantity: matchedQty,
+                                status: "executed"
+                            })
+                            buyIndex++
+                        }
+
+                        if (sellOrder.quantity === matchedQty) {
+                            await StockTrade.findByIdAndUpdate(sellOrder._id, { status: "executed" })
+                            sellIndex++
+                        } else {
+                            await StockTrade.create({
+                                username: sellOrder.username,
+                                stockId,
+                                quantity: sellOrder.quantity - matchedQty,
+                                limitPrice: sellOrder.limitPrice,
+                                type: "sell",
+                                status: "pending"
+                            })
+                            await StockTrade.findByIdAndUpdate(sellOrder._id, { 
+                                quantity: matchedQty,
+                                status: "executed"
+                            })
+                            sellIndex++
+                        }
 
                         console.log(`Matched: ${buyOrder.username} bought ${matchedQty} ${stockId} from ${sellOrder.username} @ ${executionPrice}`)
-
-                        buyIndex++
-                        sellIndex++
 
                     } else {
                         // no match possible — buyer's price too low
                         break
                     }
-                }
-
-                // cancel remaining unmatched orders
-                const unmatchedIds = [
-                    ...buyOrders.slice(buyIndex).map(o => o._id),
-                    ...sellOrders.slice(sellIndex).map(o => o._id)
-                ]
-
-                if (unmatchedIds.length > 0) {
-                    await StockTrade.updateMany(
-                        { _id: { $in: unmatchedIds } },
-                        { status: "cancelled" }
-                    )
                 }
             }
 

@@ -95,7 +95,7 @@ data class ApiWalletResponse(
 data class StepsDto(
     @SerializedName("_id") val id: String = "",
     val username: String = "",
-    val stepsCount: Int = 0,
+    val unconvertedSteps: Int = 0,
     val createdAt: String = "",
     val updatedAt: String = ""
 )
@@ -109,6 +109,23 @@ data class ApiStepsResponse(
 
 data class UpdateStepsRequest(
     val stepsCount: Int
+)
+
+data class UpdateUnconvertedStepsRequest(
+    val unconvertedSteps: Int
+)
+
+data class ConvertStepsResponse(
+    val statusCode: Int,
+    val data: ConvertStepsData,
+    val message: String,
+    val success: Boolean
+)
+
+data class ConvertStepsData(
+    val coinsEarned: Int,
+    val walletCoins: Double,
+    val stepsLeft: Int
 )
 
 // One record per calendar day returned by GET /steps/history

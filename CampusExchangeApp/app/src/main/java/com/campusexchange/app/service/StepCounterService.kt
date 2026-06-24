@@ -54,7 +54,7 @@ class StepCounterService : Service(), SensorEventListener {
         serviceScope.launch {
             val saved = stepRepository.getLocalStepsOnce()
             if (saved != null) {
-                currentSteps = saved.stepsCount
+                currentSteps = saved.todayStepCount
                 sensorBaseline = saved.sensorBaseline
             }
         }
@@ -78,7 +78,7 @@ class StepCounterService : Service(), SensorEventListener {
 
             updateNotification(currentSteps)
             serviceScope.launch {
-                stepRepository.updateLocalStepCount(currentSteps)
+                stepRepository.updateTodayStepCount(currentSteps)
             }
         }
     }
