@@ -34,12 +34,8 @@ const updateSteps = asyncHandler(async (req, res) => {
     const steps = await Steps.findOneAndUpdate(
         { username },
         { $set: { unconvertedSteps } },
-        { new: true }
+        { new: true, upsert: true }
     )
-
-    if (!steps) {
-        throw new ApiError(404, "Steps record not found")
-    }
 
     return res
         .status(200)
