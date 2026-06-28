@@ -3,7 +3,9 @@
 > **IT Workshop Course Project**
 > A gamified campus economy app where students earn coins by walking, then trade stocks and place bets using those coins.
 
-> 📱 *Download the Android APK here:* [CampusExchange App](https://drive.google.com/file/d/1sDuPAd24bYOC2YC_VRmA1Avfjuudu_SM/view?usp=sharing)
+> 📱 *Download the Android APK here:* [CampusExchange App](https://drive.google.com/file/d/1FU4GnnDQDqXdzTBoExHd4sO2cG6wBRmv/view?usp=sharing)
+
+> 🌐 *Admin Panel:* [campus-exchange-admin.vercel.app](https://campus-exchange-admin.vercel.app)
 
 ---
 
@@ -15,6 +17,8 @@
 - [Project Structure](#project-structure)
 - [Database Models](#database-models)
 - [API Reference](#api-reference)
+- [Role-Based Access Control](#role-based-access-control)
+- [Admin Panel](#admin-panel)
 - [Cron Jobs](#cron-jobs)
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
@@ -26,6 +30,8 @@
 CampusExchange is a campus-themed economy platform where your daily steps become currency. Walk more → earn more CampusCoins → trade stocks or bet on events.
 
 It's built as the backend REST API server, handling authentication, a step-to-coin economy, a stock trading engine with order matching, and a betting system with automatic reward distribution.
+
+The platform supports two roles — **User** and **Admin**. Admins manage the platform (create stocks and bet events) through a dedicated web panel built in plain HTML/CSS/JS, served from the same repo.
 
 ---
 
@@ -61,6 +67,7 @@ It's built as the backend REST API server, handling authentication, a step-to-co
 | Authentication | JWT (Access + Refresh tokens) |
 | Password Hashing | bcryptjs |
 | Scheduled Jobs | node-cron |
+| Admin Panel | Plain HTML/CSS/JS |
 | Dev Server | Nodemon |
 
 ---
@@ -86,7 +93,8 @@ Backend/
 │   │   └── db.js            # MongoDB connection
 │   │
 │   ├── middlewares/
-│   │   └── auth.middleware.js   # JWT verification (verifyJWT)
+│   │   ├── auth.middleware.js    # JWT verification (verifyJWT)
+│   │   └── admin.middleware.js   # Role check (admin only)
 │   │
 │   ├── models/              # Mongoose schemas
 │   │   ├── bet.model.js
@@ -110,6 +118,8 @@ Backend/
 │   └── index.js             # Server entry point
 │
 ├── public/                  # Static files
+├── AdminFrontend/           # Admin panel (Plain HTML/CSS/JS, deployed on Vercel)
+├── CampusExchangeApp/       # Android mobile app source
 ├── .env                     # Environment variables
 └── package.json
 ```
@@ -120,7 +130,7 @@ Backend/
 
 | Model | Description |
 |---|---|
-| `user` | User account info, credentials, refresh token |
+| `user` | User account info, credentials, role (`user` / `admin`), refresh token |
 | `wallet` | CampusCoin balance per user |
 | `step` | Daily step count records per user |
 | `stock` | Available stocks on the platform |
@@ -136,6 +146,7 @@ Backend/
 **Base URL:** `http://localhost:8000/api/v1`
 
 > 🔒 Routes marked **[Auth]** require a valid JWT Bearer token (or cookie).
+> ⚙️ Routes marked **[Admin]** require the authenticated user to have the `admin` role.
 
 ---
 
@@ -184,6 +195,33 @@ Backend/
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/leaderboard` | ❌ | Get the global leaderboard ranked by CampusCoin balance |
+
+---
+
+## Role-Based Access Control
+
+CampusExchange supports two user roles:
+
+| Role | Description |
+|---|---|
+| `user` | Default role. Can trade stocks, place bets, convert steps, and view the leaderboard. |
+| `admin` | Can do everything a user can, plus create new stocks and bet events. |
+
+The `role` field is stored on the `user` model. Protected admin routes are gated by a dedicated `admin.middleware.js` that verifies the authenticated user's role after JWT verification. Any attempt to access an admin route with a `user` role returns a `403 Forbidden` response.
+
+---
+
+## Admin Panel
+
+Admins have a dedicated web interface (plain HTML/CSS/JS) served as a static page from the `public/admin/` directory. It allows admins to:
+
+- **Log in** with their admin credentials
+- **Create new stocks** to list on the platform
+- **Create new bet events** with custom options for users to bet on
+
+The panel communicates with the backend via the same REST API, sending the admin's JWT token with each request to pass the role-based access check.
+
+> 🌐 **Live Admin Panel:** [campus-exchange-admin.vercel.app](https://campus-exchange-admin.vercel.app)
 
 ---
 
